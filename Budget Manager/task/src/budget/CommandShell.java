@@ -63,6 +63,7 @@ public class CommandShell {
         try{
             _account.addIncome(Double.parseDouble(_scanner.nextLine()));
             System.out.printf(SUCCESS_INCOME);
+            System.out.println();
         }
         catch (Exception e){
             System.out.printf(UNSUCCESSFUL_INCOME,e.getMessage());
@@ -72,11 +73,13 @@ public class CommandShell {
     private void command_ShowList(){
         while(true){
             System.out.println(ENTER_CATEGORY);
-            selectMenuItem(_categoryMenu);
-            if (getSelectedMenuItem(_categoryMenu).get_name().equals("Back")){
+            MenuItem menuItem=getSelectMenuItem(_categoryMenu);
+
+            if (menuItem.get_name().equals("Back")){
                 break;
             }
-            Category category=getSelectedCategory();
+            Category category=getSelectedCategory(menuItem);
+            if (category==null) break;
             System.out.printf("%s:",category.name());
             List<Purchase> list= _account.get_list(purchase ->purchase.get_category()==category);
             double sum=0;
@@ -90,18 +93,18 @@ public class CommandShell {
                 }
                 System.out.printf(TOTAL_SUM, sum);
             }
+            System.out.println();
         }
     }
 
     private void command_AddPurchases(){
         while (true) {
             System.out.println(ENTER_CATEGORY);
-            selectMenuItem(_categoryMenu);
-            if (getSelectedMenuItem(_categoryMenu).get_name().equals("Back")) {
+            MenuItem menuItem=getSelectMenuItem(_categoryMenu);
+            if (menuItem.get_title().equals("Back")){
                 break;
             }
-            Category category = getSelectedCategory();
-            if (category == null) continue;
+            Category category=getSelectedCategory(menuItem);
             System.out.printf(ENTER_PURCHASE_NAME);
             String name = _scanner.nextLine();
             System.out.printf(ENTER_PURCHASE_PRICE);
@@ -110,6 +113,8 @@ public class CommandShell {
                 price = Double.parseDouble(_scanner.nextLine());
                 _account.addPurchase(new Purchase(name, price, category));
                 System.out.printf(SUCCESS_PURCHASE);
+                System.out.println();
+
             } catch (Exception e) {
                 System.out.printf(UNSUCCESFULL_PURCHASE, e.getMessage());
             }
@@ -124,21 +129,27 @@ public class CommandShell {
     public void run(){
         while (isRunning){
             System.out.printf(CHOOSE_ACTION);
-            selectMenuItem(_menu);
-            getSelectedMenuItem(_menu).get_command().execute();
+            MenuItem item=getSelectMenuItem(_menu);
+            if (item.get_command()!=null){
+                item.get_command().execute();
+            }
         }
     }
 
-    private void selectMenuItem(Menu menu){
+    private MenuItem getSelectMenuItem(Menu menu){
         System.out.println(menu.toString());
         menu.set_selectedName(_scanner.nextLine());
-    }
-    private MenuItem getSelectedMenuItem(Menu menu){
+        System.out.println();
         return menu.get_MenuItem(menu.get_selectedName());
     }
-    private Category getSelectedCategory(){
-        String name=getSelectedMenuItem(_categoryMenu).get_title();
 
-        return Category.valueOf(name);
+    private Category getSelectedCategory(MenuItem item){
+        String name=item.get_title();
+        try{
+            return Category.valueOf(name);
+        }
+        catch (Exception e){
+            return null;
+        }
     }
 }
