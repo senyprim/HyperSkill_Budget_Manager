@@ -4,6 +4,7 @@ public class Purchase {
 
     private final String _name;
     private final double _price;
+    private final Category _category;
 
     public String get_name() {
         return _name;
@@ -13,13 +14,18 @@ public class Purchase {
         return _price;
     }
 
-    public Purchase(String name, double price){
+    public Category get_category() {
+        return _category;
+    }
+
+    public Purchase(String name, double price,Category category){
         this._name =name;
         this._price =price;
+        this._category=category;
     }
 
     public Purchase(Purchase clone){
-        this(clone.get_name(),clone.get_price());
+        this(clone.get_name(),clone.get_price(),clone.get_category());
     }
 
     @Override

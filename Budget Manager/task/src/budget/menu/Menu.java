@@ -34,11 +34,10 @@ public class Menu {
     public String toString(){
         StringBuilder stringBuilder=new StringBuilder();
         List<MenuItem> list= new ArrayList<>(this._menu.values());
-        list.sort(Comparator.comparing(MenuItem::get_index));
+        list.sort((MenuItem left,MenuItem right)->left.get_index()-right.get_index());
 
         for (MenuItem item:list){
-            stringBuilder.append(item.toString());
-            stringBuilder.append("\n");
+            stringBuilder.append(item.toString()+"\n");
         }
         return stringBuilder.toString().substring(0,stringBuilder.length()-1);
     }

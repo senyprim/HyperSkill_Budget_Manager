@@ -5,40 +5,53 @@ import budget.menu.*;
 
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.Predicate;
 
 public class CommandShell {
-    public static final String ENTER_PURCHASE_NAME= "Enter purchase name:";
-    public static final String ENTER_PURCHASE_PRICE="Enter its price:";
-    public static final String ENTER_INCOME="Enter income:";
-    private static final String SUCCESS_INCOME ="Income was added!";
+    public static final String ENTER_PURCHASE_NAME= "Enter purchase name:\n";
+    public static final String ENTER_PURCHASE_PRICE="Enter its price:\n";
+    public static final String ENTER_INCOME="Enter income:\n";
+    private static final String SUCCESS_INCOME ="Income was added!\n";
     private static final String UNSUCCESSFUL_INCOME ="Income was not added! Error:%s\n";
-    private static final String SUCCESS_PURCHASE ="Purchase was added!";
+    private static final String SUCCESS_PURCHASE ="Purchase was added!\n";
     private static final String UNSUCCESFULL_PURCHASE ="Purchase was not added! Error:%s\n";
     private static final String EXIT ="Bye!";
-    private static final String CHOOSE_ACTION="Choose your action:";
+    private static final String CHOOSE_ACTION="Choose your action:\n";
 
-    private static final String OUT_BALANCE ="Balance: $%.2f\n";
+    private static final String OUT_BALANCE="Balance: $%.2f\n";
     private static final String TOTAL_SUM="Total sum: $%.2f\n";
-    private static final String EMPTY_LIST="Purchase list is empty";
+    private static final String EMPTY_LIST="Purchase list is empty\n";
+    private static final String ENTER_CATEGORY="Choose the type of purchase";
 
     private Scanner _scanner;
-    private Acount _account;
+    private Account _account;
     private Menu _menu;
+    private Menu _categoryMenu;
     private boolean isRunning=true;
 
     private void createMenu(Menu menu){
         menu.add_MenuItem(new MenuItem("1", "Add income", 1, this::command_Income));
-        menu.add_MenuItem(new MenuItem("2","Add purchase",2,this::command_Add_Purchase));
+        menu.add_MenuItem(new MenuItem("2","Add purchase",2,this::command_AddPurchases));
         menu.add_MenuItem(new MenuItem("3","Show list of purchases",3,this::command_ShowList));
         menu.add_MenuItem(new MenuItem("4","Balance",4,this::command_Balance));
         menu.add_MenuItem(new MenuItem("0","Exit",5,this::command_Exit));
     }
 
+    private void createCategoryMenu(Menu menu){
+        menu.add_MenuItem(new MenuItem("1","Food", 1, null));
+        menu.add_MenuItem(new MenuItem("2","Clothes",2,null));
+        menu.add_MenuItem(new MenuItem("3","Entertainment",3,null));
+        menu.add_MenuItem(new MenuItem("4","Other",4,null));
+        menu.add_MenuItem(new MenuItem("5","Back",5,null));
+    }
+
     public CommandShell(Scanner scanner){
         this._scanner=scanner;
-        this._account =new Acount();
+        this._account =new Account();
         this._menu=new Menu();
         createMenu(this._menu);
+        this._categoryMenu=new Menu();
+        createCategoryMenu(_categoryMenu);
     }
 
     private void command_Balance(){
@@ -46,10 +59,10 @@ public class CommandShell {
     }
 
     private void command_Income(){
-        System.out.println(ENTER_INCOME);
+        System.out.printf(ENTER_INCOME);
         try{
             _account.addIncome(Double.parseDouble(_scanner.nextLine()));
-            System.out.println(SUCCESS_INCOME);
+            System.out.printf(SUCCESS_INCOME);
         }
         catch (Exception e){
             System.out.printf(UNSUCCESSFUL_INCOME,e.getMessage());
@@ -57,31 +70,49 @@ public class CommandShell {
     }
 
     private void command_ShowList(){
-        List<Purchase> list= _account.get_list();
-        double sum=0;
-        if (list.isEmpty()) {
-            System.out.println(EMPTY_LIST);
-        }
-        else {
-            for (Purchase item : list) {
-                System.out.println(item.toString());
-                sum += item.get_price();
+        while(true){
+            System.out.println(ENTER_CATEGORY);
+            selectMenuItem(_categoryMenu);
+            if (getSelectedMenuItem(_categoryMenu).get_name().equals("Back")){
+                break;
             }
-            System.out.printf(TOTAL_SUM, sum);
+            Category category=getSelectedCategory();
+            System.out.printf("%s:",category.name());
+            List<Purchase> list= _account.get_list(purchase ->purchase.get_category()==category);
+            double sum=0;
+            if (list.isEmpty()) {
+                System.out.printf(EMPTY_LIST);
+            }
+            else {
+                for (Purchase item : list) {
+                    System.out.printf(item.toString()+"\n");
+                    sum += item.get_price();
+                }
+                System.out.printf(TOTAL_SUM, sum);
+            }
         }
     }
 
-    private void command_Add_Purchase(){
-        System.out.println(ENTER_PURCHASE_NAME);
-        String name=_scanner.nextLine();
-        System.out.println(ENTER_PURCHASE_PRICE);
-        try{
-            double price=Double.parseDouble(_scanner.nextLine());
-            _account.addPurchase(new Purchase(name,price));
-            System.out.println(SUCCESS_PURCHASE);
-        }
-        catch (Exception e){
-            System.out.printf(UNSUCCESFULL_PURCHASE,e.getMessage());
+    private void command_AddPurchases(){
+        while (true) {
+            System.out.println(ENTER_CATEGORY);
+            selectMenuItem(_categoryMenu);
+            if (getSelectedMenuItem(_categoryMenu).get_name().equals("Back")) {
+                break;
+            }
+            Category category = getSelectedCategory();
+            if (category == null) continue;
+            System.out.printf(ENTER_PURCHASE_NAME);
+            String name = _scanner.nextLine();
+            System.out.printf(ENTER_PURCHASE_PRICE);
+            double price = 0;
+            try {
+                price = Double.parseDouble(_scanner.nextLine());
+                _account.addPurchase(new Purchase(name, price, category));
+                System.out.printf(SUCCESS_PURCHASE);
+            } catch (Exception e) {
+                System.out.printf(UNSUCCESFULL_PURCHASE, e.getMessage());
+            }
         }
     }
 
@@ -92,26 +123,22 @@ public class CommandShell {
 
     public void run(){
         while (isRunning){
-            executeAction(chooseAction());
+            System.out.printf(CHOOSE_ACTION);
+            selectMenuItem(_menu);
+            getSelectedMenuItem(_menu).get_command().execute();
         }
     }
 
-    private void command_printMenu(){
-        System.out.println(_menu.toString());
+    private void selectMenuItem(Menu menu){
+        System.out.println(menu.toString());
+        menu.set_selectedName(_scanner.nextLine());
     }
+    private MenuItem getSelectedMenuItem(Menu menu){
+        return menu.get_MenuItem(menu.get_selectedName());
+    }
+    private Category getSelectedCategory(){
+        String name=getSelectedMenuItem(_categoryMenu).get_title();
 
-    private String chooseAction(){
-        System.out.println(CHOOSE_ACTION);
-        command_printMenu();
-        String choose=_scanner.nextLine();
-        MenuItem item=_menu.get_MenuItem(choose);
-        return item==null?null:item.get_name();
-    }
-    private void executeAction(String actionName){
-        System.out.println();
-        if (actionName!=null) {
-            _menu.get_MenuItem(actionName).get_command().execute();
-        }
-        System.out.println();
+        return Category.valueOf(name);
     }
 }
