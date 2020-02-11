@@ -6,6 +6,10 @@ import budget.acount.Purchase;
 import budget.menu.Menu;
 import budget.menu.MenuItem;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Scanner;
 
@@ -24,6 +28,10 @@ public class CommandShell {
     private static final String TOTAL_SUM="Total sum: $%.2f\n";
     private static final String EMPTY_LIST="Purchase list is empty\n";
     private static final String ENTER_CATEGORY="Choose the type of purchase";
+    private static final String SUCCESS_SAVE="Purchases were saved!\n";
+    private static final String SUCCESS_LOAD="Purchases were loaded!\n";
+
+    private final String fileName="purchases.txt";
 
     private Scanner _scanner;
     private Account _account;
@@ -37,6 +45,8 @@ public class CommandShell {
         menu.add_MenuItem(new MenuItem("2","Add purchase",2,this::command_AddPurchases));
         menu.add_MenuItem(new MenuItem("3","Show list of purchases",3,this::command_ShowList));
         menu.add_MenuItem(new MenuItem("4","Balance",4,this::command_Balance));
+        menu.add_MenuItem(new MenuItem("5","Save",4,this::command_Save));
+        menu.add_MenuItem(new MenuItem("6","Load",4,this::command_Load));
         menu.add_MenuItem(new MenuItem("0","Exit",5,this::command_Exit));
     }
 
@@ -66,6 +76,28 @@ public class CommandShell {
         createCategoryMenu(_categoryMenu);
         this._listMenu=new Menu();
         createListMenu(_listMenu);
+    }
+
+    private void command_Save(){
+        try(ObjectOutputStream write = new ObjectOutputStream(new FileOutputStream(fileName)))
+        {
+            write.writeObject(_account);
+            System.out.println(SUCCESS_SAVE);
+        }
+        catch(Exception ex){
+            System.out.println("ERROR: "+ex.getMessage());
+        }
+    }
+
+    private void command_Load(){
+        try(ObjectInputStream read = new ObjectInputStream(new FileInputStream(fileName)))
+        {
+            _account=(Account)read.readObject();
+            System.out.println(SUCCESS_LOAD);
+        }
+        catch(Exception ex){
+            System.out.println("ERROR: "+ex.getMessage());
+        }
     }
 
     private void command_Balance(){

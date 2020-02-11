@@ -1,12 +1,13 @@
 package budget.acount;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
 
-public class Account {
+public class Account implements Serializable {
     private double _money;
     private List<Purchase> _list;
 

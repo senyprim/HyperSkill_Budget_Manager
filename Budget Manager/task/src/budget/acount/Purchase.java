@@ -1,6 +1,8 @@
 package budget.acount;
 
-public class Purchase {
+import java.io.Serializable;
+
+public class Purchase implements Serializable {
 
     private final String _name;
     private final double _price;
