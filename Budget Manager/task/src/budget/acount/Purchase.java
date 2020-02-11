@@ -18,7 +18,7 @@ public class Purchase {
         return _category;
     }
 
-    public Purchase(String name, double price,Category category){
+    public Purchase(String name, double price, Category category){
         this._name =name;
         this._price =price;
         this._category=category;
