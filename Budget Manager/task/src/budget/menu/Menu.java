@@ -4,11 +4,13 @@ import java.util.*;
 
 public class Menu {
     private String _selectedName;
+    public final String name;
     private Map<String, MenuItem> _menu;
 
-    public Menu(){
+    public Menu(String name){
         this._menu=new HashMap<>();
         this._selectedName=null;
+        this.name=name;
     }
 
     public void add_MenuItem(MenuItem item){

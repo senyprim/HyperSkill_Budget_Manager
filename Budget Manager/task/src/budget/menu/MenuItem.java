@@ -1,6 +1,8 @@
 package budget.menu;
 import budget.acount.ICommand;
 
+import java.util.Objects;
+
 public class MenuItem {
     private final int _index;
     private final String _name;
@@ -25,6 +27,22 @@ public class MenuItem {
     public int get_index() {return _index;}
 
     public ICommand get_command(){return _command;}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MenuItem menuItem = (MenuItem) o;
+        return _index == menuItem._index &&
+                _name.equals(menuItem._name) &&
+                _title.equals(menuItem._title) &&
+                Objects.equals(_command, menuItem._command);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_index, _name, _title, _command);
+    }
 
     @Override
     public String toString(){

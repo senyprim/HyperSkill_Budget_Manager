@@ -10,8 +10,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.function.Predicate;
 
 public class CommandShell {
     public static final String ENTER_PURCHASE_NAME= "Enter purchase name:";
@@ -28,6 +28,7 @@ public class CommandShell {
     private static final String TOTAL_SUM="Total sum: $%.2f\n";
     private static final String EMPTY_LIST="Purchase list is empty\n";
     private static final String ENTER_CATEGORY="Choose the type of purchase";
+    private static final String ENTER_ANALYZE="How do you want to sort?";
     private static final String SUCCESS_SAVE="Purchases were saved!\n";
     private static final String SUCCESS_LOAD="Purchases were loaded!\n";
 
@@ -38,44 +39,70 @@ public class CommandShell {
     private Menu _menu;
     private Menu _categoryMenu;
     private Menu _listMenu;
+    private Menu _analyzeMenu;
+    private Menu _analyzeCategoryMenu;
     private boolean isRunning=true;
 
-    private void createMenu(Menu menu){
+    private Menu createMainMenu(){
+        Menu menu=new Menu("MainMenu");
         menu.add_MenuItem(new MenuItem("1", "Add income", 1, this::command_Income));
         menu.add_MenuItem(new MenuItem("2","Add purchase",2,this::command_AddPurchases));
         menu.add_MenuItem(new MenuItem("3","Show list of purchases",3,this::command_ShowList));
         menu.add_MenuItem(new MenuItem("4","Balance",4,this::command_Balance));
-        menu.add_MenuItem(new MenuItem("5","Save",4,this::command_Save));
-        menu.add_MenuItem(new MenuItem("6","Load",4,this::command_Load));
-        menu.add_MenuItem(new MenuItem("0","Exit",5,this::command_Exit));
+        menu.add_MenuItem(new MenuItem("5","Save",6,this::command_Save));
+        menu.add_MenuItem(new MenuItem("6","Load",6,this::command_Load));
+        menu.add_MenuItem(new MenuItem("7","Analyze (Sort)",7,this::command_Analyze));
+        menu.add_MenuItem(new MenuItem("0","Exit",8,this::command_Exit));
+        return menu;
     }
 
-    private void createCategoryMenu(Menu menu){
+    private Menu createCategoryMenu(){
+        Menu menu=new Menu("CategoryMenu");
         menu.add_MenuItem(new MenuItem("1","Food", 1, null));
         menu.add_MenuItem(new MenuItem("2","Clothes",2,null));
         menu.add_MenuItem(new MenuItem("3","Entertainment",3,null));
         menu.add_MenuItem(new MenuItem("4","Other",4,null));
         menu.add_MenuItem(new MenuItem("5","Back",5,null));
+        return menu;
     }
 
-    private void createListMenu(Menu menu){
+    private Menu createListMenu(){
+        Menu menu=new Menu("ListMenu");
         menu.add_MenuItem(new MenuItem("1","Food", 1, null));
         menu.add_MenuItem(new MenuItem("2","Clothes",2,null));
         menu.add_MenuItem(new MenuItem("3","Entertainment",3,null));
         menu.add_MenuItem(new MenuItem("4","Other",4,null));
         menu.add_MenuItem(new MenuItem("5","All",5,null));
         menu.add_MenuItem(new MenuItem("6","Back",6,null));
+        return menu;
+    }
+
+    private Menu createAnalyzeMenu(){
+        Menu menu=new Menu("AnalyzeMenu");
+        menu.add_MenuItem(new MenuItem("1","Sort all purchases", 1, null));
+        menu.add_MenuItem(new MenuItem("2","Sort by type",2,null));
+        menu.add_MenuItem(new MenuItem("3","Sort certain type",3,null));
+        menu.add_MenuItem(new MenuItem("4","Back",4,null));
+        return menu;
+    }
+
+    private Menu createAnalyzeCategoryMenu(){
+        Menu menu=new Menu("AnalyzeCategoryMenu");
+        menu.add_MenuItem(new MenuItem("1","Food", 1, null));
+        menu.add_MenuItem(new MenuItem("2","Clothes",2,null));
+        menu.add_MenuItem(new MenuItem("3","Entertainment",3,null));
+        menu.add_MenuItem(new MenuItem("4","Other",4,null));
+        return menu;
     }
 
     public CommandShell(Scanner scanner){
         this._scanner=scanner;
         this._account =new Account();
-        this._menu=new Menu();
-        createMenu(this._menu);
-        this._categoryMenu=new Menu();
-        createCategoryMenu(_categoryMenu);
-        this._listMenu=new Menu();
-        createListMenu(_listMenu);
+        this._menu=createMainMenu();
+        this._categoryMenu=createCategoryMenu();
+        this._listMenu=createListMenu();
+        this._analyzeMenu=createAnalyzeMenu();
+        this._analyzeCategoryMenu=createAnalyzeCategoryMenu();
     }
 
     private void command_Save(){
@@ -116,6 +143,64 @@ public class CommandShell {
         }
     }
 
+    private void command_Exit(){
+        System.out.print(EXIT);
+        this.isRunning=false;
+    }
+
+    private Purchase createPurchase(Category category){
+        System.out.println(ENTER_PURCHASE_NAME);
+        String name = _scanner.nextLine();
+        System.out.println(ENTER_PURCHASE_PRICE);
+        try {
+            double price = Double.parseDouble(_scanner.nextLine());
+            return new Purchase(name, price, category);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void command_AddPurchases(){
+        while (true) {
+            System.out.println(ENTER_CATEGORY);
+            MenuItem menuItem=getSelectMenuItem(_categoryMenu);
+            if (menuItem.get_title().equals("Back")){
+                break;
+            }
+            Category category=getSelectedCategory(menuItem);
+            Purchase purchase=createPurchase(category);
+            if (purchase!=null) {
+                _account.addPurchase(purchase);
+                System.out.println(SUCCESS_PURCHASE);
+            }
+            System.out.println();
+        }
+    }
+
+    private void printPurchaseList(List<Purchase> list){
+        double sum=0;
+        if (list==null || list.isEmpty()) {
+            System.out.print(EMPTY_LIST);
+        }
+        else {
+            for (Purchase item : list) {
+                    System.out.println(item.toString());
+                    sum += item.get_price();
+            }
+            System.out.printf(TOTAL_SUM, sum);
+        }
+    }
+    private void printFilteredPurchaseList(MenuItem menuItem,Comparator<Purchase> comparator){
+        Category category=null;
+        if (!menuItem.get_title().equals("All")){
+            category=getSelectedCategory(menuItem);
+        }
+        System.out.printf("%s:\n",menuItem.get_title());
+        final Category forLambda=category;
+        List<Purchase> list= _account.get_list(category==null?null: purchase ->purchase.get_category()==forLambda,comparator);
+        printPurchaseList(list);
+    }
+
     private void command_ShowList(){
         if (_account.get_list().isEmpty()) {
             System.out.println(EMPTY_LIST);
@@ -128,55 +213,58 @@ public class CommandShell {
             if (menuItem.get_title().equals("Back")){
                 break;
             }
-            else if (!menuItem.get_title().equals("All")){
-                category=getSelectedCategory(menuItem);
-            }
-            System.out.printf("%s:\n",menuItem.get_title());
-            final Category forLambda=category;
-            List<Purchase> list= _account.get_list(category==null?null: purchase ->purchase.get_category()==forLambda);
-
-            double sum=0;
-            if (list.isEmpty()) {
-                System.out.print(EMPTY_LIST);
-            }
-            else {
-                for (Purchase item : list) {
-                    System.out.println(item.toString());
-                    sum += item.get_price();
-                }
-                System.out.printf(TOTAL_SUM, sum);
-            }
+            printFilteredPurchaseList(menuItem,null);
             System.out.println();
         }
     }
 
-    private void command_AddPurchases(){
-        while (true) {
-            System.out.println(ENTER_CATEGORY);
-            MenuItem menuItem=getSelectMenuItem(_categoryMenu);
+    private void command_Analyze(){
+        while(true){
+            System.out.println(ENTER_ANALYZE);
+            MenuItem menuItem=getSelectMenuItem(_analyzeMenu);
             if (menuItem.get_title().equals("Back")){
                 break;
             }
-            Category category=getSelectedCategory(menuItem);
-            System.out.println(ENTER_PURCHASE_NAME);
-            String name = _scanner.nextLine();
-            System.out.println(ENTER_PURCHASE_PRICE);
-            try {
-                double price = Double.parseDouble(_scanner.nextLine());
-                _account.addPurchase(new Purchase(name, price, category));
-                System.out.println(SUCCESS_PURCHASE);
-                System.out.println();
-
-            } catch (Exception e) {
-                System.out.printf(UNSUCCESFULL_PURCHASE, e.getMessage());
-            }
+            else if (menuItem.get_name().equals("1")) analyzeSortAll();
+            else if (menuItem.get_name().equals("2")) analyzeSortByType();
+            else if (menuItem.get_name().equals("3")) analyzeType();
+            else throw new IllegalArgumentException("");
+            System.out.println();
         }
     }
 
-    private void command_Exit(){
-        System.out.print(EXIT);
-        this.isRunning=false;
+    private void analyzeSortAll(){
+        printFilteredPurchaseList(new MenuItem("","All",0,null),Comparator.comparing(Purchase::get_price).reversed());
     }
+
+    private void analyzeSortByType(){
+        Map<Category,Double> temp= new HashMap<>();
+        List<Purchase> list=_account.get_list();
+        for(Purchase item:list){
+            if (!temp.containsKey(item.get_category())){
+                temp.put(item.get_category(),0.0);
+            }
+            double currentValue=temp.get(item.get_category());
+            temp.put(item.get_category(),currentValue+item.get_price());
+        }
+        Map<Category,Double> result=new LinkedHashMap<>();
+        temp.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEach(item->result.put(item.getKey(),item.getValue()));
+        double sum=0;
+        System.out.println("Types:");
+        for (Map.Entry<Category,Double>item:result.entrySet()){
+            System.out.printf("%s - $%.2f\n",item.getKey().name(),item.getValue());
+            sum+=item.getValue();
+        }
+        System.out.printf(TOTAL_SUM,sum);
+
+    }
+
+    private void analyzeType(){
+        MenuItem menuItem=getSelectMenuItem(_analyzeCategoryMenu);
+        printFilteredPurchaseList(menuItem,Comparator.comparing(Purchase::get_price).reversed());
+    }
+
 
     public void run(){
         while (isRunning){
